@@ -44,9 +44,8 @@ kosmtik:
     - name: /usr/local/kosmtik
     - require:
       - git: kosmtik
-  # localconfig.json -- can be edited via the salt.pillar() function in 
-  # the Vagrantfile. By default it'll connect locally over Unix sockets,
-  # but you can override this to use a remote database over TCP/IP.
+  # Edited via pillars, shouldn't need any manual overrides here
+  # Any improvements should ideally be in rega
   file.managed:
     - name: /home/kosmtik/localconfig.json
     - contents: |
@@ -61,7 +60,7 @@ kosmtik:
               "Datasource.dbname": "{{ salt['pillar.get']('kosmtik:source:dbname', 'gis') }}",
               "Datasource.password": "{{ salt['pillar.get']('kosmtik:source:password', 'gispassword') }}",
               "Datasource.user": "{{ salt['pillar.get']('kosmtik:source:user', 'gisuser') }}",
-              "Datasource.host": "{{ salt['pillar.get']('kosmtik:source:host', '172.28.128.10') }}"
+              "Datasource.host": "{{ salt['pillar.get']('kosmtik:source:host', '172.22.22.11') }}"
             }
           }
         ]
@@ -84,6 +83,10 @@ kosmtik:
         stop on runlevel [016]
         env HOME=/home/kosmtik/
         setuid kosmtik
+        nice -10
+        oom score -500
+        respawn
+        respawn limit 10 90
         chdir /usr/local/kosmtik
         exec node index.js serve /srv/openstreetmap-carto/project.yaml --host=0.0.0.0 --localconfig /home/kosmtik/localconfig.json
   service.running:
