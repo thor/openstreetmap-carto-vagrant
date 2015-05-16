@@ -21,9 +21,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # as well, resulting in us being able to get the dev. environment up.
   config.vm.synced_folder "salt/", "/srv/salt/"
   
-  # Private networking for the virtual machines
-  config.vm.network "private_network", type: "dhcp"
-
   # Set up the Salt provisioner, without much special configuration.
   config.vm.provision :salt do |salt|
     salt.minion_config = "salt/minion"
@@ -56,6 +53,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # The hostname needs to correspond with salt
     gis.vm.hostname = "postgis"
 
+    # Static IP
+    gis.vm.network "private_network", ip: "172.22.22.11"
+
     gis.vm.provider "virtualbox" do |vb|
       # We're dealing with memory intensive business: minimum should be 2048MB.
       # Default here is 4096MB, but you can decrease or increase it as you need.
@@ -80,9 +80,17 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # The hostname needs to correspond with salt
     render.vm.hostname = "render"
 
+    # Static IP
+    render.vm.network "private_network", ip: "172.22.22.22"
+
     # Setting up port-forwarding for kosmtik, so you can access it at
     # http://127.0.0.1:6789
     render.vm.network "forwarded_port", guest: 6789, host: 6789
+
+    render.vm.provider "virtualbox" do |vb|
+      # If it doesn't get enough memory, you'll have a hard time rendering maps
+      vb.customize ["modifyvm", :id, "--memory", "1024"]
+    end
     
 
   end
