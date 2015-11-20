@@ -20,11 +20,18 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Since we want to run Salt masterless, we've got to setup the Salt root
   # as well, resulting in us being able to get the dev. environment up.
   config.vm.synced_folder "salt/", "/srv/salt/"
+
+  # NOTE: Vagrant bug #5973, see salt provisioning.
+  config.vm.provision :file, source: "salt/minion", destination: "/tmp/minion"
   
   # Set up the Salt provisioner, without much special configuration.
   config.vm.provision :salt do |salt|
     salt.minion_config = "salt/minion"
+	 salt.masterless = true
     salt.run_highstate = true
+	 salt.colorize = true
+	 salt.bootstrap_options = "-P -c /tmp"
+	 salt.verbose = true
   
     # IF you'd like to use any plugins for kosmtik, you can provide them 
     # underneath here by uncommenting the block. Check out the kosmtik
@@ -33,16 +40,16 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # while in /usr/local/kosmtik
     
     salt.pillar({
-#	"postgis" => {
-#		"user" => "gisuser",
-#		"password" => "gispassword"
-#	}
+    #	"postgis" => {
+    #		"user" => "gisuser",
+    #		"password" => "gispassword"
+    #	},
     # "kosmtik" => {
     #   "plugins" => [
     #     "kosmtik-map-compare",
     #     "kosmtik-place-search"
     #   ]
-    # }
+    # },
     })
   end
 
@@ -69,7 +76,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       # vb.customize ["modifyvm", :id, "--cpus", "4"]
       # vb.customize ["modifyvm", :id, "--hwvirtex", "on"]
     end
-  
   end
 
   
@@ -89,7 +95,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     render.vm.provider "virtualbox" do |vb|
       # If it doesn't get enough memory, you'll have a hard time rendering maps
-      vb.customize ["modifyvm", :id, "--memory", "1024"]
+      vb.customize ["modifyvm", :id, "--memory", "2048"]
+      vb.customize ["modifyvm", :id, "--cpus", "4"]
+      vb.customize ["modifyvm", :id, "--hwvirtex", "on"]
     end
     
 
