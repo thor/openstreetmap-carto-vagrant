@@ -1,24 +1,25 @@
-# State for configuring the packages and requirements for PostGIS locally.
-# Configures a very basic setup with increased memory for postgresql,
-# along with software needed for importing OpenStreetMap data.
+# openstreetmap-vagrant
+# - State for configuring the packages and requirements for PostGIS locally.
+# - Configures a very basic setup with increased memory for postgresql,
+#   along with software needed for importing OpenStreetMap data.
+# See README.md for more information
 
 
-# installing the required GIS-software, plus...
-# create the postgresql database and enabling PostGIS
+# Installing the required GIS-software, plus...
+# creating the postgresql database and enabling PostGIS
 gis:
   pkg.installed:
-    - install_recommends: false
+    - install_recommends: False
     - pkgs:
-      # here come the goodies; PostGIS is elementary to a current dev. environment.
       - postgresql-9.3-postgis-2.1
       - postgresql-contrib-9.3
       - proj-bin
       - libgeos-dev
   # Making sure the postresql service is running, and that it's restarted
   # when changes to the configuration are processed. Requires gis beforehand.
-  service:
+  service.running:
     - name: postgresql
-    - running
+    - enable: True
     - watch:
       - file: postgis-postgresql.conf
       - file: postgresql.conf
@@ -31,8 +32,8 @@ gis:
   postgres_user.present:
     - name: {{ salt['pillar.get']('postgis:user', 'gisuser') }}
     - password: {{ salt['pillar.get']('postgis:password', 'gispassword') }}
-    - superuser: true
-    - createdb: true
+    - superuser: True
+    - createdb: True
     - require:
       - service: gis
   postgres_database.present:
@@ -118,7 +119,7 @@ sysctl.overcommit:
 # OpenStreetMap related repos and packages
 osm:
   # Add the ppa for osm2pgsql
-  # It also contains libapache2-mod-tile, should it be needed
+  # It also contains libapache2-mod-tile, should it be needed.
   pkgrepo.managed:
     - ppa: kakrueger/openstreetmap
   # Install any specifically OSM related package
@@ -126,24 +127,21 @@ osm:
     - install_recommends: false
     - refresh: true
     - pkgs:
-      - osm2pgsql  # installs from the PPA
+      - osm2pgsql  # installs from the PPA above
       - osmctools  # installs from ubuntu main v0.1-2
 
 gis.shapefiles:
   pkg.installed:
     - install_recommends: false
-    # we need gdal-bin for ogr2ogr, and mapnik-utils for shapefiles
     - pkgs:
-      - mapnik-utils
-      - gdal-bin
+      - mapnik-utils   # for shapefiles processing
+      - gdal-bin       # for ogr2ogr
+  # Downloads and processes shapefiles, only if the already (if so) ones are a 
+  # day older or more. Requires that the packages are already installed.
   cmd.run:
-    # run/download/generate shapefiles for the style
     - name: /srv/openstreetmap-carto/get-shapefiles.sh
     - cwd: /srv/openstreetmap-carto
-    # Checks the index time for the land_polygons.index to see if shapefiles should run again
-    - unless: "test `find /srv/openstreetmap-carto/data/land-polygons-split-3857/land_polygons.index -mmin +1440 -exec echo 1`"
-    # Experimental setting: different VT, allows for instant output within salt logs.
-    - use_vt: true
-    # We'll be needing these if we are to run get-shapefiles.sh
+    - unless: "test `find /srv/openstreetmap-carto/data/land-polygons-split-3857/land_polygons.index -mmin +1440`"
+    - use_vt: True
     - require:
       - pkg: gis.shapefiles

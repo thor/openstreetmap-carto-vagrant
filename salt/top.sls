@@ -1,7 +1,7 @@
 base:
   '*':
     - base
-  'postgis':
+  'gis':
     - gis
-  'render':
+  'map':
     - kosmtik

@@ -1,5 +1,7 @@
-# Salt states for getting kosmtik installed for purposes of
-# improving the OpenStreetMap CartoCSS implementation and style.
+# openstreetmap-vagrant
+# - States for getting kosmtik installed for purposes of
+#   improving the OpenStreetMap CartoCSS implementation and style.
+# See README.md for more information
 
 
 # A whole bunch of libraries that we'll need, plus a bunch of extra fornts.
@@ -91,6 +93,7 @@ kosmtik:
         exec node index.js serve /srv/openstreetmap-carto/project.yaml --host=0.0.0.0 --localconfig /home/kosmtik/localconfig.json
   service.running:
     - name: kosmtik
+    - enable: True
     - require:
       - file: /etc/init/kosmtik.conf
 
